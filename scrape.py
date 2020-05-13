@@ -1,0 +1,143 @@
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+import time
+import pandas as pd
+import re
+import sys
+import os
+import platform
+
+def encode_ascii(string):
+    # this is to handle non-unicode characters
+    return string.encode('ascii', 'ignore')
+
+def get_store_name_from_url(url):
+    # look for text between 'usr/' and '?_trksid'
+    store_name = re.search('usr/(.+?)?_trksid', url).group(1)
+
+    # return storename without last character '?'
+    return store_name[:-1]
+
+def setup_driver(url):
+    # set to headless browser options
+    options = Options()
+    options.headless = True
+
+    # get current working directory and add path to Chrome driver
+    cwd = os.getcwd()
+
+    # get the OS type
+    system = platform.system()
+
+    # choose the OS appropriate driver
+    if system == 'Linux':
+        chrome_driver_path = cwd + '/drivers/chromedriver_linux64'
+    elif system == 'Darwin':   
+        chrome_driver_path = cwd + '/drivers/chromedriver_mac64'
+    else: 
+        print('Windows is not supported. Killing the process now')
+        sys.exit()
+
+    # create Chrome webdriver instance with options and chrome driver path
+    driver = webdriver.Chrome(chrome_options=options, executable_path=r"%s" % chrome_driver_path)
+    
+    # follow the url and scroll down the document to retrieve html
+    driver.get(url)
+    driver.execute_script("window.scrollTo(0, document.body.scrollHeight);var lenOfPage=document.body.scrollHeight;return lenOfPage;")
+    
+    time.sleep(1)
+
+    return driver
+
+def get_item_data(url):
+    # get driver instance 
+    driver = setup_driver(url)
+
+    # setup the xpath (html elements search parameters)
+    xpath = "//*[@class='mbg']"
+    results = driver.find_elements_by_xpath(xpath)
+
+    # get <a> tag
+    link_tag = results[0].find_element_by_tag_name('a')
+
+    # get seller's url from the tag
+    seller_url = link_tag.get_attribute("href")
+
+    # set seller name
+    seller = get_store_name_from_url(seller_url)
+    
+    time.sleep(1)
+    
+    # close the driver instance
+    driver.quit()
+    
+    return seller, seller_url
+
+def run_scraper(keyword):
+    # specify the url
+    url = 'https://www.ebay.co.uk/sch/i.html?_from=R40&_nkw= %s &_sacat=0&LH_PrefLoc=1&rt=nc&LH_ItemCondition=1000' % keyword 
+
+    print("Starting process for: %s" % url)
+
+    # get driver instance 
+    driver = setup_driver(url)
+
+    # specify xpath
+    xpath = "//*[@class='s-item__info clearfix']"
+
+    # get results
+    results = driver.find_elements_by_xpath(xpath)
+
+    print("Total number of items on the requested page: %s" % len(results))
+
+    # create empty array to store data
+    data = []
+
+    # get number of results
+    total_items = len(results)
+
+    # initialise the counter
+    item_counter = 1
+
+    # loop over the found web elements items, populate the required fields in item row (object), and push it to 'data' array
+    for result in results:
+        print("running item %s out of %s" % (item_counter,total_items))
+        item_counter = item_counter + 1
+
+        # transform the webelement to string
+        text_string = result.text
+
+        # get product title by html class name
+        product = result.find_element_by_class_name('s-item__title').text
+
+        # check if SPONSORED is present in the webelement as a string
+        is_sponsored = "SPONSORED" in text_string
+
+        # find link and extract the url
+        link = result.find_element_by_tag_name('a')
+        product_url = link.get_attribute("href")
+
+        # fetch sellers information from the product url
+        seller, seller_url = get_item_data(product_url)
+
+        # populate the item row and push it to 'data' array
+        data.append({"sponsored": is_sponsored, "product" : encode_ascii(product), "product_url" : encode_ascii(product_url), "seller": encode_ascii(seller), "seller_url": encode_ascii(seller_url) })
+
+    # close driver 
+    driver.quit()
+
+    # save to pandas dataframe
+    df = pd.DataFrame(data)
+
+    # write to csv
+    print("Writing to items.csv")
+    df.to_csv('items.csv')
+
+    print("DONE!")
+
+# script entry point
+if __name__ == "__main__":
+    query = sys.argv[1]
+    run_scraper(query)
+
+
