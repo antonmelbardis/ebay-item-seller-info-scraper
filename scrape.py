@@ -80,7 +80,7 @@ def get_item_data(url):
 
 def run_scraper(keyword):
     # specify the url
-    url = 'https://www.ebay.co.uk/sch/i.html?_from=R40&_nkw= %s &_sacat=0&LH_PrefLoc=1&rt=nc&LH_ItemCondition=1000_ipg=25' % keyword 
+    url = 'https://www.ebay.co.uk/sch/i.html?_from=R40&_nkw= %s &_sacat=0&LH_PrefLoc=1&rt=nc&LH_ItemCondition=1000' % keyword 
 
     print("Starting process for: %s" % url)
 
