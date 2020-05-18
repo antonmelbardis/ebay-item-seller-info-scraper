@@ -21,28 +21,30 @@ def get_store_name_from_url(url):
 def setup_driver(url):
     # set to headless browser options
     options = Options()
-    options.headless = True
+    # options.headless = True
     options.add_argument("start-maximized")
-    # options.add_argument('--headless')
+    options.add_argument("--log-level=3")
+    options.add_argument('--headless')
 
     # get current working directory and add path to Chrome driver
     cwd = os.getcwd()
 
     # get the OS type
     system = platform.system()
-    print(system)
 
     # choose the OS appropriate driver
     if system == 'Linux':
         chrome_driver_path = cwd + '/drivers/chromedriver_linux64'
     elif system == 'Darwin':   
         chrome_driver_path = cwd + '/drivers/chromedriver_mac64'
+    elif system == 'Windows':   
+        chrome_driver_path = cwd + '\drivers\chromedriver.exe'
     else: 
-        print('Windows is not supported. Killing the process now')
+        print('Unknows OS, quitting now')
         sys.exit()
 
     # create Chrome webdriver instance with options and chrome driver path
-    driver = webdriver.Chrome(chrome_options=options, executable_path=r"%s" % chrome_driver_path)
+    driver = webdriver.Chrome(options=options, executable_path=r"%s" % chrome_driver_path)
     
     # follow the url and scroll down the document to retrieve html
     driver.get(url)
@@ -78,7 +80,7 @@ def get_item_data(url):
 
 def run_scraper(keyword):
     # specify the url
-    url = 'https://www.ebay.co.uk/sch/i.html?_from=R40&_nkw= %s &_sacat=0&LH_PrefLoc=1&rt=nc&LH_ItemCondition=1000' % keyword 
+    url = 'https://www.ebay.co.uk/sch/i.html?_from=R40&_nkw= %s &_sacat=0&LH_PrefLoc=1&rt=nc&LH_ItemCondition=1000_ipg=25' % keyword 
 
     print("Starting process for: %s" % url)
 
@@ -112,6 +114,7 @@ def run_scraper(keyword):
 
         # get product title by html class name
         product = result.find_element_by_class_name('s-item__title').text
+        print(product)
 
         # check if SPONSORED is present in the webelement as a string
         is_sponsored = "SPONSORED" in text_string
@@ -132,9 +135,15 @@ def run_scraper(keyword):
     # save to pandas dataframe
     df = pd.DataFrame(data)
 
+    # remove b prifix from the dataframe columns. Python 3 Pandas 
+    df['product'] = df['product'].apply(lambda s: s.decode('utf-8'))
+    df['product_url'] = df['product_url'].apply(lambda s: s.decode('utf-8'))
+    df['seller'] = df['seller'].apply(lambda s: s.decode('utf-8'))
+    df['seller_url'] = df['seller_url'].apply(lambda s: s.decode('utf-8'))
+
     # write to csv
-    print("Writing to items.csv")
-    df.to_csv('items.csv')
+    print("Writing to csv file")
+    df.to_csv('%s.csv' % query)
 
     print("DONE!")
 
