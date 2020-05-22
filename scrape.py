@@ -1,5 +1,6 @@
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
+import urllib.parse
 import time
 import pandas as pd
 import re
@@ -22,9 +23,9 @@ def setup_driver(url):
     # set to headless browser options
     options = Options()
     # options.headless = True
-    options.add_argument("start-maximized")
+    # options.add_argument("start-maximized")
     options.add_argument("--log-level=3")
-    options.add_argument('--headless')
+    # options.add_argument('--headless')
 
     # get current working directory and add path to Chrome driver
     cwd = os.getcwd()
@@ -45,14 +46,21 @@ def setup_driver(url):
 
     # create Chrome webdriver instance with options and chrome driver path
     driver = webdriver.Chrome(options=options, executable_path=r"%s" % chrome_driver_path)
+
+    driver.implicitly_wait(15)
     
     # follow the url and scroll down the document to retrieve html
     driver.get(url)
     driver.execute_script("window.scrollTo(0, document.body.scrollHeight);var lenOfPage=document.body.scrollHeight;return lenOfPage;")
-    
-    time.sleep(1)
 
     return driver
+
+def enable_show_author(driver):
+    driver.find_element_by_class_name("srp-view-options").click()
+    driver.find_element_by_class_name("srp-view-options__customize").click()
+    driver.find_element_by_id("e1-13").click()
+    driver.find_element_by_id("e1-3").click()
+    return
 
 def get_item_data(url):
     # get driver instance 
@@ -80,12 +88,15 @@ def get_item_data(url):
 
 def run_scraper(keyword):
     # specify the url
-    url = 'https://www.ebay.co.uk/sch/i.html?_from=R40&_nkw= %s &_sacat=0&LH_PrefLoc=1&rt=nc&LH_ItemCondition=1000' % keyword 
+    url = 'https://www.ebay.co.uk/sch/i.html?_from=R40&_nkw=%s&_sacat=0&LH_PrefLoc=1&rt=nc&LH_ItemCondition=1000' % urllib.parse.quote(keyword)
 
     print("Starting process for: %s" % url)
 
     # get driver instance 
     driver = setup_driver(url)
+
+    # add author to result
+    enable_show_author(driver)
 
     # specify xpath
     xpath = "//*[@class='s-item__info clearfix']"
