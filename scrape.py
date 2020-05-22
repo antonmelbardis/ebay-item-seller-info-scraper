@@ -23,9 +23,9 @@ def setup_driver(url):
     # set to headless browser options
     options = Options()
     # options.headless = True
-    # options.add_argument("start-maximized")
+    options.add_argument("start-maximized")
     options.add_argument("--log-level=3")
-    # options.add_argument('--headless')
+    options.add_argument('--headless')
 
     # get current working directory and add path to Chrome driver
     cwd = os.getcwd()
@@ -60,35 +60,9 @@ def enable_show_author(driver):
     driver.find_element_by_id("e1-13").click()
     driver.find_element_by_id("e1-3").click()
 
-# def get_item_data(url):
-#     # get driver instance 
-#     driver = setup_driver(url)
-
-#     # setup the xpath (html elements search parameters)
-#     xpath = "//*[@class='mbg']"
-#     results = driver.find_elements_by_xpath(xpath)
-
-#     # get <a> tag
-#     link_tag = results[0].find_element_by_tag_name('a')
-
-#     # get seller's url from the tag
-#     seller_url = link_tag.get_attribute("href")
-
-#     # set seller name
-#     seller = driver.find_element_by_class_name("s-item__seller-info-text").text
-#     print(seller)
-#     # seller = get_store_name_from_url(seller_url)
-    
-#     time.sleep(1)
-    
-#     # close the driver instance
-#     driver.quit()
-    
-#     return seller, seller_url
-
 def run_scraper(keyword):
     # specify the url
-    url = 'https://www.ebay.co.uk/sch/i.html?_from=R40&_nkw=%s&_sacat=0&LH_PrefLoc=1&rt=nc&LH_ItemCondition=1000&_ipg=200' % urllib.parse.quote(keyword)
+    url = 'https://www.ebay.co.uk/sch/i.html?_from=R40&_nkw=%s&_sacat=0&LH_PrefLoc=1&rt=nc&LH_ItemCondition=1000' % urllib.parse.quote(keyword)
 
     print("Starting process for: %s" % url)
 
@@ -97,9 +71,9 @@ def run_scraper(keyword):
 
     # add author to result
     enable_show_author(driver)
-    time.sleep(1)
-    driver.execute_script("window.scrollTo(0, document.body.scrollHeight);var lenOfPage=document.body.scrollHeight;return lenOfPage;")
-    time.sleep(1)
+    # time.sleep(1)
+    # driver.execute_script("window.scrollTo(0, document.body.scrollHeight);var lenOfPage=document.body.scrollHeight;return lenOfPage;")
+    time.sleep(3)
 
     # get results
     results = driver.find_elements_by_class_name("s-item__info")
