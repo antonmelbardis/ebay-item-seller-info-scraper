@@ -1,4 +1,7 @@
 from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options
 import urllib.parse
 import time
@@ -8,9 +11,11 @@ import sys
 import os
 import platform
 
+
 def encode_ascii(string):
     # this is to handle non-unicode characters
     return string.encode('ascii', 'ignore')
+
 
 def get_store_name_from_url(url):
     # look for text between 'usr/' and '?_trksid'
@@ -19,13 +24,14 @@ def get_store_name_from_url(url):
     # return storename without last character '?'
     return store_name[:-1]
 
+
 def setup_driver(url):
     # set to headless browser options
     options = Options()
-    # options.headless = True
+    options.headless = True
     options.add_argument("start-maximized")
     options.add_argument("--log-level=3")
-    options.add_argument('--headless')
+    # options.add_argument('--headless')
 
     # get current working directory and add path to Chrome driver
     cwd = os.getcwd()
@@ -36,44 +42,51 @@ def setup_driver(url):
     # choose the OS appropriate driver
     if system == 'Linux':
         chrome_driver_path = cwd + '/drivers/chromedriver_linux64'
-    elif system == 'Darwin':   
+    elif system == 'Darwin':
         chrome_driver_path = cwd + '/drivers/chromedriver_mac64'
-    elif system == 'Windows':   
-        chrome_driver_path = cwd + '\drivers\chromedriver.exe'
-    else: 
+    elif system == 'Windows':
+        chrome_driver_path = cwd + '\\drivers\\chromedriver.exe'
+    else:
         print('Unknows OS, quitting now')
         sys.exit()
 
     # create Chrome webdriver instance with options and chrome driver path
-    driver = webdriver.Chrome(options=options, executable_path=r"%s" % chrome_driver_path)
+    driver = webdriver.Chrome(
+        options=options, executable_path=r"%s" % chrome_driver_path)
 
     driver.implicitly_wait(15)
-    
+
     # follow the url and scroll down the document to retrieve html
     driver.get(url)
 
     return driver
 
+
 def enable_show_author(driver):
-    driver.find_element_by_class_name("srp-view-options").click()
-    driver.find_element_by_class_name("srp-view-options__customize").click()
-    driver.find_element_by_id("e1-13").click()
-    driver.find_element_by_id("e1-3").click()
+    WebDriverWait(driver, 100).until(EC.element_to_be_clickable(
+        (By.CLASS_NAME, "srp-view-options"))).click()
+    WebDriverWait(driver, 100).until(EC.element_to_be_clickable(
+        (By.CLASS_NAME, "srp-view-options__customize"))).click()
+    WebDriverWait(driver, 100).until(EC.element_to_be_clickable(
+        (By.CSS_SELECTOR, "#e1-1 > div > fieldset:nth-child(4) > div > label:nth-child(4) > input[type=radio]"))).click()
+    WebDriverWait(driver, 100).until(
+        EC.element_to_be_clickable((By.ID, "e1-13"))).click()
+    WebDriverWait(driver, 100).until(
+        EC.element_to_be_clickable((By.ID, "e1-3"))).click()
+
 
 def run_scraper(keyword):
     # specify the url
-    url = 'https://www.ebay.co.uk/sch/i.html?_from=R40&_nkw=%s&_sacat=0&LH_PrefLoc=1&rt=nc&LH_ItemCondition=1000' % urllib.parse.quote(keyword)
+    url = 'https://www.ebay.co.uk/sch/i.html?_from=R40&_nkw=%s&_sacat=0&LH_PrefLoc=1&rt=nc&LH_ItemCondition=1000' % urllib.parse.quote(
+        keyword)
 
     print("Starting process for: %s" % url)
 
-    # get driver instance 
+    # get driver instance
     driver = setup_driver(url)
 
     # add author to result
     enable_show_author(driver)
-    # time.sleep(1)
-    # driver.execute_script("window.scrollTo(0, document.body.scrollHeight);var lenOfPage=document.body.scrollHeight;return lenOfPage;")
-    time.sleep(3)
 
     # get results
     results = driver.find_elements_by_class_name("s-item__info")
@@ -91,7 +104,7 @@ def run_scraper(keyword):
 
     # loop over the found web elements items, populate the required fields in item row (object), and push it to 'data' array
     for result in results:
-        print("running item %s out of %s" % (item_counter,total_items))
+        print("running item %s out of %s" % (item_counter, total_items))
         driver.execute_script("arguments[0].scrollIntoView();", result)
 
         item_counter = item_counter + 1
@@ -112,21 +125,23 @@ def run_scraper(keyword):
 
         # fetch sellers information from the product url
         # seller, seller_url = get_item_data(product_url)
-        seller = result.find_element_by_class_name("s-item__seller-info-text").text
+        seller = result.find_element_by_class_name(
+            "s-item__seller-info-text").text
         print(seller)
         seller = seller[len("Seller: "):seller.find("(")]
         seller_url = "https://www.ebay.co.uk/usr/%s" % seller
 
         # populate the item row and push it to 'data' array
-        data.append({"sponsored": is_sponsored, "product" : encode_ascii(product), "product_url" : encode_ascii(product_url), "seller": encode_ascii(seller), "seller_url": encode_ascii(seller_url) })
+        data.append({"sponsored": is_sponsored, "product": encode_ascii(product), "product_url": encode_ascii(
+            product_url), "seller": encode_ascii(seller), "seller_url": encode_ascii(seller_url)})
 
-    # close driver 
+    # close driver
     driver.quit()
 
     # save to pandas dataframe
     df = pd.DataFrame(data)
 
-    # remove b prifix from the dataframe columns. Python 3 Pandas 
+    # remove b prifix from the dataframe columns. Python 3 Pandas
     df['product'] = df['product'].apply(lambda s: s.decode('utf-8'))
     df['product_url'] = df['product_url'].apply(lambda s: s.decode('utf-8'))
     df['seller'] = df['seller'].apply(lambda s: s.decode('utf-8'))
@@ -138,9 +153,8 @@ def run_scraper(keyword):
 
     print("DONE!")
 
+
 # script entry point
 if __name__ == "__main__":
     query = sys.argv[1]
     run_scraper(query)
-
-
