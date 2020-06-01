@@ -85,6 +85,11 @@ def run_scraper(keyword):
     # get driver instance
     driver = setup_driver(url)
 
+    # Wait for gdpr
+    WebDriverWait(driver, 100).until(
+        EC.visibility_of_element_located((By.ID, "gdpr-banner-accept")))
+    driver.find_element_by_id("gdpr-banner-accept").send_keys("\n")
+
     # add author to result
     enable_show_author(driver)
 
