@@ -64,11 +64,11 @@ def setup_driver(url):
 
 def enable_show_author(driver):
     WebDriverWait(driver, 100).until(EC.element_to_be_clickable(
-        (By.CLASS_NAME, "vHvr"))).click()
+        (By.CLASS_NAME, "srp-view-options"))).click()
     WebDriverWait(driver, 100).until(EC.element_to_be_clickable(
-        (By.ID, "custLink"))).click()
-    WebDriverWait(driver, 100).until(EC.element_to_be_clickable(
-        (By.CSS_SELECTOR, "#e1-1 > div > table > tbody > tr:nth-child(4) > td:nth-child(2) > label:nth-child(4) > input[type=radio]"))).click()
+        (By.CLASS_NAME, "srp-view-options__customize"))).click()
+    # WebDriverWait(driver, 100).until(EC.element_to_be_clickable(
+        # (By.CSS_SELECTOR, "#e1-1 > div > table > tbody > tr:nth-child(4) > td:nth-child(2) > label:nth-child(4) > input[type=radio]"))).click()
     WebDriverWait(driver, 100).until(
         EC.element_to_be_clickable((By.ID, "e1-13"))).click()
     WebDriverWait(driver, 100).until(
@@ -94,7 +94,7 @@ def run_scraper(keyword):
     enable_show_author(driver)
 
     # get results
-    results = driver.find_elements_by_class_name("lvresult")
+    results = driver.find_elements_by_class_name("s-item__info")
 
     print("Total number of items on the requested page: %s" % len(results))
 
@@ -118,7 +118,7 @@ def run_scraper(keyword):
         text_string = result.text
 
         # get product title by html class name
-        product = result.find_element_by_class_name('lvtitle').text
+        product = result.find_element_by_class_name('s-item__title').text
         print(product)
 
         # check if SPONSORED is present in the webelement as a string
@@ -130,7 +130,7 @@ def run_scraper(keyword):
 
         # fetch sellers information from the product url
         # seller, seller_url = get_item_data(product_url)
-        seller = result.find_element_by_class_name("lvdetails").text
+        seller = result.find_element_by_class_name("s-item__seller-info-text").text
         print(seller)
         seller = seller[len("Seller: "):seller.find("(")]
         seller_url = "https://www.ebay.co.uk/usr/%s" % seller
