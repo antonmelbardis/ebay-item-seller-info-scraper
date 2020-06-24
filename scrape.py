@@ -29,9 +29,9 @@ def setup_driver(url):
     # set to headless browser options
     options = Options()
     # options.headless = True
-    options.add_argument("start-maximized")
+    # options.add_argument("start-maximized")
     options.add_argument("--log-level=3")
-    # options.add_argument('--headless')
+    options.add_argument('--headless')
 
     # get current working directory and add path to Chrome driver
     cwd = os.getcwd()
